@@ -1,0 +1,21 @@
+{
+  "name": "hardhat",
+  "version": "0.1.0",
+  "private": true,
+  "files": [
+    "./artifacts"
+  ],
+  "scripts": {
+    "compile": "dotenv -e ../../.env -- hardhat compile",
+    "deploy:local": "dotenv -e ../../.env -- hardhat run scripts/deploy.ts --network localhost",
+    "deploy:sepolia": "dotenv -e ../../.env -- hardhat run scripts/deploy.ts --network sepolia",
+    "node": "NODE_ENV=development dotenv -e ../../.env -- hardhat node",
+    "test": "dotenv -e ../../.env -- hardhat test",
+    "test:report-gas": "REPORT_GAS=true dotenv -e ../../.env -- hardhat test"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^3.0.0",
+    "dotenv-cli": "^7.3.0",
+    "hardhat": "^2.18.2"
+  }
+}
