@@ -1,6 +1,6 @@
 "use client";
 
-import { WalletIcon } from "@heroicons/react/20/solid";
+import { CiWallet } from "react-icons/ci";
 import {
   Modal,
   ModalContent,
@@ -13,7 +13,7 @@ import React from "react";
 import { type BaseError } from "viem";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 
-export function ConnectWalletModal({
+export function ConnectWallet({
   isOpen,
   onOpen,
   onOpenChange,
@@ -31,28 +31,40 @@ export function ConnectWalletModal({
     <>
       <Button
         onClick={onOpen}
-        color="primary"
-        startContent={<WalletIcon className="h-4 w-4" />}
+        color="success"
+        startContent={<CiWallet className="h-4 w-4" />}
       >
         {isConnected ? (
           <span className="w-14 truncate sm:w-20">{address}</span>
         ) : (
-          "Connect"
+          "Connect Wallet"
         )}
       </Button>
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+
+      {/* Modal for Wallet Connection Options */}
+      <Modal
+        isOpen={isOpen}
+        onOpenChange={onOpenChange}
+        backdrop="blur"
+        css={{
+          backgroundColor: "#000",
+        }}
+      >
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-1">
-                Connect your wallet
+              <ModalHeader css={{ color: "#fff" }}>
+                Connect Your Wallet
               </ModalHeader>
               <ModalBody>
                 <div className="flex flex-col space-y-3">
-                  {connectors.map((x) =>
-                    x.ready && x.id === connector?.id ? (
+                  {connectors.map((connectorOption) => {
+                    const isCurrentConnector =
+                      connectorOption.ready &&
+                      connectorOption.id === connector?.id;
+                    return isCurrentConnector ? (
                       <Button
-                        key={x.id}
+                        key={connectorOption.id}
                         onClick={() => disconnect()}
                         color="danger"
                       >
@@ -60,21 +72,27 @@ export function ConnectWalletModal({
                       </Button>
                     ) : (
                       <Button
-                        key={x.id}
-                        onClick={() => connect({ connector: x })}
+                        key={connectorOption.id}
+                        onClick={() => connect({ connector: connectorOption })}
                         color="primary"
                       >
-                        {isLoading && x.id === pendingConnector?.id
-                          ? `${x.name} (connecting)`
-                          : `Connect ${x.name}`}
+                        {isLoading &&
+                        connectorOption.id === pendingConnector?.id
+                          ? `${connectorOption.name} (connecting...)`
+                          : `Connect ${connectorOption.name}`}
                       </Button>
-                    ),
+                    );
+                  })}
+                  {/* Display error message if there's an error */}
+                  {error && (
+                    <div className="text-red-500">
+                      {(error as BaseError).shortMessage}
+                    </div>
                   )}
-                  {error && <div>{(error as BaseError).shortMessage}</div>}
                 </div>
               </ModalBody>
               <ModalFooter>
-                <Button color="danger" variant="light" onClick={onClose}>
+                <Button color="danger" variant="flat" onClick={onClose}>
                   Close
                 </Button>
               </ModalFooter>

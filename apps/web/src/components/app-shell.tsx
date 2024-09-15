@@ -15,10 +15,9 @@ import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useState } from "react";
 
-import { ConnectWalletModal } from "./connect-wallet-modal";
-import { DarkLogo } from "./logo";
+import { ConnectWallet } from "./ConnectWallet";
+import { CustomLogo } from "./CustomLogo";
 
-import { mainNavigation } from "@/lib/navigation/config";
 import { getBasePath } from "@/lib/utils/base-path";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -49,60 +48,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className="sm:hidden"
           />
           <NavbarBrand>
-            <DarkLogo className="h-[24px] w-[120px]" />
+            <CustomLogo className="h-[24px] w-[120px]" />
           </NavbarBrand>
         </NavbarContent>
-        <NavbarContent className="hidden gap-4 sm:flex" justify="center">
-          {mainNavigation.map((item, index) => (
-            <NavbarItem key={item.href}>
-              <Link
-                as={NextLink}
-                color={
-                  basePath === item.href
-                    ? "primary"
-                    : index === menuItems.length - 1
-                    ? "danger"
-                    : "foreground"
-                }
-                className="w-full"
-                href={item.href}
-                size="sm"
-              >
-                {item.name}
-              </Link>
-            </NavbarItem>
-          ))}
-        </NavbarContent>
+
         <NavbarContent justify="end">
           <NavbarItem>
-            <ConnectWalletModal
+            <ConnectWallet
               isOpen={isOpen}
               onOpen={onOpen}
               onOpenChange={onOpenChange}
             />
           </NavbarItem>
         </NavbarContent>
-        <NavbarMenu>
-          {mainNavigation.map((item, index) => (
-            <NavbarMenuItem key={item.href}>
-              <Link
-                as={NextLink}
-                color={
-                  basePath === item.href
-                    ? "primary"
-                    : index === menuItems.length - 1
-                    ? "danger"
-                    : "foreground"
-                }
-                className="w-full"
-                href={item.href}
-                size="lg"
-              >
-                {item.name}
-              </Link>
-            </NavbarMenuItem>
-          ))}
-        </NavbarMenu>
       </Navbar>
       <main className="mx-auto max-w-[1024px] px-6 py-10">{children}</main>
     </>

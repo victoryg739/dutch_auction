@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowPathIcon } from "@heroicons/react/20/solid";
+import { IoIosRefresh } from "react-icons/io";
+
 import {
   Button,
   Card,
@@ -13,12 +14,13 @@ import {
   useDisclosure,
 } from "@nextui-org/react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
+import { useAccount } from "wagmi";
 
-import { CreateAuctionModal } from "@/components/create-auction-modal";
-import { PageHeading } from "@/components/page-heading";
+import { CreateAuction } from "@/components/CreateAuction";
 import {
   useAuctionFactoryGetAllAuctions,
+  useAuctionFactoryGetAuctionsByCreator,
   useAuctionTokenName,
   useAuctionTokenSymbol,
   useDutchAuctionGetAuctionEnded,
@@ -30,156 +32,13 @@ import {
 import { useCountdown } from "@/hooks/use-countdown";
 import { formatCountdown } from "@/lib/utils/countdown";
 
-export default function AuctionsPage() {
-  const [showEnded, setShowEnded] = useState(false);
-  const { data, refetch } = useAuctionFactoryGetAllAuctions();
-
-  // Modal Control
-  const { isOpen, onOpen, onOpenChange } = useDisclosure();
-
-  return (
-    <div className="space-y-5">
-      <PageHeading
-        primaryAction={
-          <CreateAuctionModal
-            isOpen={isOpen}
-            onOpen={onOpen}
-            onOpenChange={onOpenChange}
-          />
-        }
-        secondaryAction={
-          <Button
-            onClick={() => refetch()}
-            startContent={<ArrowPathIcon className="h-4 w-4" />}
-            variant="light"
-          >
-            Refresh
-          </Button>
-        }
-      >
-        Browse Auctions
-      </PageHeading>
-      <Checkbox isSelected={showEnded} onValueChange={setShowEnded}>
-        Show ended auctions
-      </Checkbox>
-      <ul className="space-y-6">
-        {data !== undefined && data.length > 0 ? (
-          data
-            .toReversed()
-            .map((address) => (
-              <AuctionCard
-                key={address}
-                contractAddress={address}
-                showEnded={showEnded}
-              />
-            ))
-        ) : (
-          <Card>
-            <CardBody>No auctions found</CardBody>
-          </Card>
-        )}
-      </ul>
-    </div>
-  );
-}
-
-function AuctionCard({
-  contractAddress,
-  showEnded,
-}: {
-  contractAddress: `0x${string}`;
-  showEnded: boolean;
-}) {
-  // Static data
-  const { data: startTime } = useDutchAuctionGetStartTime({
-    address: contractAddress,
-  });
-  const startTimeDate = useMemo(() => {
-    return new Date(Number(startTime) * 1000);
-  }, [startTime]);
-  const { data: duration } = useDutchAuctionGetDuration({
-    address: contractAddress,
-  });
-
-  // Dynamic data - Needs refetch
-  const { data: tokensDistributed } = useDutchAuctionGetTokensDistributed({
-    address: contractAddress,
-  });
-  const { data: auctionEnded } = useDutchAuctionGetAuctionEnded({
-    address: contractAddress,
-  });
-
-  // Countdown
-  const { minutes, seconds } = useCountdown(startTimeDate, Number(duration));
-
-  return (
-    (showEnded || !auctionEnded) && (
-      <Card as="li" key={contractAddress}>
-        <CardHeader>
-          <Link
-            href={`/auctions/${contractAddress}`}
-            className="text-foreground-500 truncate text-sm"
-          >
-            {contractAddress}
-          </Link>
-        </CardHeader>
-        <Divider />
-        <CardBody>
-          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-            <TokenMetadata contractAddress={contractAddress} />
-            <div className="flex gap-2">
-              {auctionEnded ? (
-                <>
-                  <Chip color="success" variant="flat" size="sm">
-                    Auction Ended
-                  </Chip>
-                  {tokensDistributed && (
-                    <Chip variant="flat" size="sm">
-                      Tokens Distributed
-                    </Chip>
-                  )}
-                </>
-              ) : (
-                <>
-                  <Chip color="warning" variant="flat">
-                    Auction On-going
-                  </Chip>
-                  <Chip variant="flat">
-                    {formatCountdown({
-                      minutes,
-                      seconds,
-                    })}
-                  </Chip>
-                </>
-              )}
-            </div>
-          </div>
-        </CardBody>
-        <Divider />
-        <CardFooter>
-          <Button
-            as={Link}
-            href={`/auctions/${contractAddress}`}
-            color="secondary"
-            variant="light"
-            size="sm"
-          >
-            View Auction
-          </Button>
-        </CardFooter>
-      </Card>
-    )
-  );
-}
-
-function TokenMetadata({
+const TokenAndSymbol = ({
   contractAddress,
 }: {
   contractAddress: `0x${string}`;
-}) {
-  // get token metadata
+}) => {
   const { data: tokenAddress } = useDutchAuctionGetToken({
-    address: contractAddress as `0x${string}`,
+    address: contractAddress,
   });
 
   const { data: tokenName } = useAuctionTokenName({
@@ -190,8 +49,185 @@ function TokenMetadata({
   });
 
   return (
-    <h3 className="text-2xl font-medium">
-      {tokenName} ({tokenSymbol})
-    </h3>
+    <div className="flex flex-col space-y-2 rounded-lg bg-gray-800 p-4 shadow-md">
+      <div className="flex items-center">
+        <h3 className="text-lg font-bold text-gray-400">Token:</h3>
+        <p className="ml-2 text-lg font-semibold text-white">
+          {tokenName || "Token Name"}
+        </p>
+      </div>
+      <div className="flex items-center">
+        <h3 className="text-lg font-bold text-gray-400">Symbol:</h3>
+        <p className="ml-2 text-lg font-semibold text-white">
+          {tokenSymbol || "SYM"}
+        </p>
+      </div>
+    </div>
+  );
+};
+
+export default function AuctionsPage() {
+  const [showUserAuctions, setShowUserAuctions] = useState(false);
+  const { address: userAddress } = useAccount();
+
+  // Modal control for creating auctions
+  const {
+    isOpen: isModalOpen,
+    onOpen: openModal,
+    onOpenChange: toggleModal,
+  } = useDisclosure();
+
+  // Fetch all auctions
+  const { data: allAuctions, refetch: refetchAll } =
+    useAuctionFactoryGetAllAuctions();
+
+  // Fetch auctions created by the current user
+  const { data: userAuctions, refetch: refetchUser } =
+    useAuctionFactoryGetAuctionsByCreator({
+      args: [userAddress as `0x${string}`],
+    });
+
+  // Choose data to display based on the state
+  const auctionsToDisplay = showUserAuctions ? userAuctions : allAuctions;
+
+  // Refetch function based on the current view
+  const refetchAuctions = () => {
+    if (showUserAuctions) {
+      refetchUser();
+    } else {
+      refetchAll();
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      <header className="md:flex md:items-center md:justify-between">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-foreground text-2xl font-bold leading-7 sm:truncate sm:text-3xl sm:tracking-tight">
+            Auction Listings
+          </h2>
+        </div>
+        <div className="mt-4 flex flex-shrink-0 gap-2 md:ml-4 md:mt-0">
+          <Button
+            onClick={refetchAuctions}
+            startContent={<IoIosRefresh className="h-4 w-4" />}
+            className="bg-blue-500 text-white hover:bg-blue-600" // Custom background color
+          >
+            Refresh
+          </Button>
+          <CreateAuction
+            isOpen={isModalOpen}
+            onOpen={openModal}
+            onOpenChange={toggleModal}
+          />
+        </div>
+      </header>
+      {/* Checkbox to toggle between all auctions and user's auctions */}
+      <Checkbox
+        isSelected={showUserAuctions}
+        onValueChange={setShowUserAuctions}
+      >
+        Show my auctions
+      </Checkbox>
+      {/* List of auctions */}
+      <ul className="space-y-6">
+        {auctionsToDisplay !== undefined && auctionsToDisplay.length > 0 ? (
+          auctionsToDisplay
+            .slice()
+            .reverse()
+            .map((auctionAddress) => (
+              <AuctionCard
+                key={auctionAddress}
+                contractAddress={auctionAddress}
+              />
+            ))
+        ) : (
+          <Card>
+            <CardBody>There is no auctions</CardBody>
+          </Card>
+        )}
+      </ul>
+    </div>
+  );
+}
+
+function AuctionCard({ contractAddress }: { contractAddress: `0x${string}` }) {
+  // Fetch static auction data
+  const { data: startTime } = useDutchAuctionGetStartTime({
+    address: contractAddress,
+  });
+  const startDate = useMemo(() => {
+    return startTime ? new Date(Number(startTime) * 1000) : new Date();
+  }, [startTime]);
+
+  const { data: auctionDuration } = useDutchAuctionGetDuration({
+    address: contractAddress,
+  });
+
+  // Fetch dynamic auction data
+  const { data: isTokensDistributed } = useDutchAuctionGetTokensDistributed({
+    address: contractAddress,
+  });
+  const { data: hasAuctionEnded } = useDutchAuctionGetAuctionEnded({
+    address: contractAddress,
+  });
+
+  // Countdown timer
+  const { minutes, seconds } = useCountdown(startDate, Number(auctionDuration));
+
+  return (
+    <Card as="li">
+      <CardBody>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <TokenAndSymbol contractAddress={contractAddress} />
+
+          <div className="flex flex-col items-end gap-2">
+            {!hasAuctionEnded ? (
+              <>
+                <div className="inline-block rounded-xl bg-yellow-600 px-3 py-1 text-black">
+                  Auction In Progress
+                </div>
+              </>
+            ) : (
+              <>
+                {isTokensDistributed && (
+                  <div className="inline-block rounded-xl bg-green-700 px-3 py-1 text-white">
+                    Tokens Distributed
+                  </div>
+                )}
+                <div className="inline-block rounded-xl bg-red-700 px-3 py-1 text-white">
+                  Auction Ended
+                </div>
+              </>
+            )}
+
+            <div className="mt-2 rounded-xl bg-gray-800 p-2 text-sm text-gray-300">
+              {contractAddress}
+            </div>
+          </div>
+        </div>
+
+        {(minutes !== 0 || seconds !== 0) && (
+          <div className="ml-2 mt-2">
+            <div className="text-md pxtext-medium my-6 inline-block rounded-xl">
+              {formatCountdown({
+                minutes,
+                seconds,
+              })}
+            </div>
+          </div>
+        )}
+      </CardBody>
+      <Divider />
+      <CardFooter className="flex justify-center">
+        <Button
+          as={Link}
+          href={`/auctions/${contractAddress}`}
+          className="rounded-lg bg-blue-600 px-3 py-2 text-white hover:bg-blue-700"
+        >
+          View Auction
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }

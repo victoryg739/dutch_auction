@@ -13,12 +13,11 @@ import {
 import { clsx } from "clsx";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useMemo } from "react";
+import React, { useMemo } from "react"; // Added React import
 import { toast } from "sonner";
 import { formatEther } from "viem";
 import { useAccount } from "wagmi";
 
-import { PageHeading } from "@/components/page-heading";
 import { PlaceBidModal } from "@/components/place-bid-modal";
 import {
   useAuctionTokenBalanceOf,
@@ -169,43 +168,49 @@ export default function AuctionPage() {
           </Link>
         </nav>
 
-        <PageHeading
-          primaryAction={
-            auctionEnded ? (
+        <div className="md:flex md:items-center md:justify-between">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-foreground text-2xl font-bold leading-7 sm:truncate sm:text-3xl sm:tracking-tight">
+              {tokenName} ({tokenSymbol})
+            </h2>
+          </div>
+          {true && (
+            <div className="mt-4 flex flex-shrink-0 gap-2 md:ml-4 md:mt-0">
               <Button
-                onClick={() => distributeTokens()}
-                isDisabled={!auctionEnded || tokensDistributed}
+                onClick={() => refetch()}
+                startContent={<ArrowPathIcon className="h-4 w-4" />}
+                variant="light"
               >
-                {tokensDistributed ? "Tokens Distributed" : "Distribute Tokens"}
+                Refresh
               </Button>
-            ) : (
-              currentPrice !== undefined &&
-              remainingSupply !== undefined && (
-                <PlaceBidModal
-                  contractAddress={contractAddress as `0x${string}`}
-                  currentPrice={currentPrice}
-                  auctionEnded={auctionEnded}
-                  remainingSupply={remainingSupply}
-                  refetch={refetch}
-                  isOpen={isOpen}
-                  onOpen={onOpen}
-                  onOpenChange={onOpenChange}
-                />
-              )
-            )
-          }
-          secondaryAction={
-            <Button
-              onClick={() => refetch()}
-              startContent={<ArrowPathIcon className="h-4 w-4" />}
-              variant="light"
-            >
-              Refresh
-            </Button>
-          }
-        >
-          {tokenName} ({tokenSymbol})
-        </PageHeading>
+              {auctionEnded ? (
+                <Button
+                  onClick={() => distributeTokens()}
+                  isDisabled={!auctionEnded || tokensDistributed}
+                >
+                  {tokensDistributed
+                    ? "Tokens Distributed"
+                    : "Distribute Tokens"}
+                </Button>
+              ) : (
+                currentPrice !== undefined &&
+                remainingSupply !== undefined && (
+                  <PlaceBidModal
+                    contractAddress={contractAddress as `0x${string}`}
+                    currentPrice={currentPrice}
+                    auctionEnded={auctionEnded}
+                    remainingSupply={remainingSupply}
+                    refetch={refetch}
+                    isOpen={isOpen}
+                    onOpen={onOpen}
+                    onOpenChange={onOpenChange}
+                  />
+                )
+              )}
+            </div>
+          )}
+        </div>
+
         <div className="flex gap-2">
           {auctionEnded ? (
             <Chip color="success" variant="flat">
