@@ -10,8 +10,8 @@ import "@/styles/globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "BlockDutch",
-  description: "A Web3 Dutch Auction App",
+  title: "Dutch Auctions",
+  description: "Dutch Auction",
 };
 
 export default function RootLayout({

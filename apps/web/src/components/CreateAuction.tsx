@@ -1,6 +1,5 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Modal,
   ModalContent,
@@ -14,19 +13,10 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { parseEther } from "viem";
-import { z } from "zod";
 
 import { useAuctionFactoryCreateAuction } from "@/generated";
 
-const createAuctionSchema = z.object({
-  name: z.string().min(1),
-  symbol: z.string().min(1),
-  totalSupply: z.number().int().positive(),
-  startPrice: z.number().positive(),
-  reservedPrice: z.number().positive(),
-});
-
-export function CreateAuctionModal({
+export function CreateAuction({
   isOpen,
   onOpen,
   onOpenChange,
@@ -40,8 +30,8 @@ export function CreateAuctionModal({
     handleSubmit,
     reset,
     formState: { errors, isValid, isSubmitting },
-  } = useForm<z.infer<typeof createAuctionSchema>>({
-    resolver: zodResolver(createAuctionSchema),
+  } = useForm({
+    mode: "onChange", // Update form state on every change
     defaultValues: {
       name: "",
       symbol: "",
@@ -53,49 +43,60 @@ export function CreateAuctionModal({
 
   const { write: createAuction } = useAuctionFactoryCreateAuction({
     onSuccess() {
-      toast.success("Auction created successfully");
+      toast.success("Auction successfully created");
       reset();
     },
   });
 
   return (
     <>
-      <Button color="secondary" onClick={onOpen}>
+      <Button color="primary" onClick={onOpen}>
         Create Auction
       </Button>
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+      <Modal
+        isOpen={isOpen}
+        onOpenChange={onOpenChange}
+        backdrop="blur"
+        css={{
+          backgroundColor: "#000", // Set modal background to black
+        }}
+      >
         <ModalContent>
           {(onClose) => (
             <form
-              onSubmit={handleSubmit((input) => {
+              onSubmit={handleSubmit((formData) => {
                 createAuction({
                   args: [
-                    input.name,
-                    input.symbol,
-                    parseEther(String(input.totalSupply)),
-                    parseEther(String(input.startPrice)),
-                    parseEther(String(input.reservedPrice)),
+                    formData.name,
+                    formData.symbol,
+                    parseEther(String(formData.totalSupply)),
+                    parseEther(String(formData.startPrice)),
+                    parseEther(String(formData.reservedPrice)),
                   ],
                 });
               })}
             >
-              <ModalHeader className="flex flex-col gap-1">
-                Place Bid
+              <ModalHeader css={{ color: "#fff" }}>
+                Create New Auction
               </ModalHeader>
               <ModalBody>
                 <Input
                   label="Token Name"
                   labelPlacement="outside"
-                  placeholder="Token name"
-                  errorMessage={errors.name?.message && errors.name.message}
-                  {...register("name")}
+                  placeholder="Enter token name"
+                  errorMessage={errors.name?.message}
+                  {...register("name", {
+                    required: "Token Name is required",
+                  })}
                 />
                 <Input
                   label="Token Symbol"
                   labelPlacement="outside"
-                  placeholder="Token symbol"
-                  errorMessage={errors.symbol?.message && errors.symbol.message}
-                  {...register("symbol")}
+                  placeholder="Enter token symbol"
+                  errorMessage={errors.symbol?.message}
+                  {...register("symbol", {
+                    required: "Token Symbol is required",
+                  })}
                 />
                 <Input
                   type="number"
@@ -103,75 +104,74 @@ export function CreateAuctionModal({
                   labelPlacement="outside"
                   placeholder="1000"
                   endContent={
-                    <div className="pointer-events-none flex items-center">
-                      <span className="text-default-400 text-small">
-                        tokens
-                      </span>
-                    </div>
+                    <span className="text-default-400 text-small">tokens</span>
                   }
-                  errorMessage={
-                    errors.totalSupply?.message && errors.totalSupply.message
-                  }
+                  errorMessage={errors.totalSupply?.message}
                   {...register("totalSupply", {
+                    required: "Total Supply is required",
                     valueAsNumber: true,
+                    min: {
+                      value: 1,
+                      message: "Total Supply must be a positive integer",
+                    },
+                    validate: (value) =>
+                      Number.isInteger(value) ||
+                      "Total Supply must be an integer",
                   })}
                 />
                 <Input
                   type="number"
                   step="any"
-                  label="Start Price"
+                  label="Start Price (ETH)"
                   labelPlacement="outside"
                   placeholder="1"
                   endContent={
-                    <div className="pointer-events-none flex items-center">
-                      <span className="text-default-400 text-small">
-                        ethers
-                      </span>
-                    </div>
+                    <span className="text-default-400 text-small">ETH</span>
                   }
-                  errorMessage={
-                    errors.startPrice?.message && errors.startPrice.message
-                  }
+                  errorMessage={errors.startPrice?.message}
                   {...register("startPrice", {
+                    required: "Start Price is required",
                     valueAsNumber: true,
+                    min: {
+                      value: 0.00000001,
+                      message: "Start Price must be positive",
+                    },
                   })}
                 />
                 <Input
                   type="number"
                   step="any"
-                  label="Reserved Price"
+                  label="Reserved Price (ETH)"
                   labelPlacement="outside"
                   placeholder="0.5"
                   endContent={
-                    <div className="pointer-events-none flex items-center">
-                      <span className="text-default-400 text-small">
-                        ethers
-                      </span>
-                    </div>
+                    <span className="text-default-400 text-small">ETH</span>
                   }
-                  errorMessage={
-                    errors.reservedPrice?.message &&
-                    errors.reservedPrice.message
-                  }
+                  errorMessage={errors.reservedPrice?.message}
                   {...register("reservedPrice", {
+                    required: "Reserved Price is required",
                     valueAsNumber: true,
+                    min: {
+                      value: 0.00000001,
+                      message: "Reserved Price must be positive",
+                    },
                   })}
                 />
               </ModalBody>
               <ModalFooter>
                 <Button
                   type="button"
-                  color="danger"
-                  variant="light"
+                  color="error"
+                  variant="flat"
                   onClick={onClose}
                 >
-                  Close
+                  Cancel
                 </Button>
                 <Button
                   type="submit"
                   isDisabled={!isValid}
                   isLoading={isSubmitting}
-                  color="secondary"
+                  color="success"
                 >
                   Create Auction
                 </Button>
