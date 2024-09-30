@@ -57,7 +57,7 @@ export function ConnectWallet({
                 Connect Your Wallet
               </ModalHeader>
               <ModalBody>
-                <div className="flex flex-col space-y-3">
+                <div className="mb-8 flex flex-col space-y-3">
                   {connectors.map((connectorOption) => {
                     const isCurrentConnector =
                       connectorOption.ready &&
@@ -91,11 +91,6 @@ export function ConnectWallet({
                   )}
                 </div>
               </ModalBody>
-              <ModalFooter>
-                <Button color="danger" variant="flat" onClick={onClose}>
-                  Close
-                </Button>
-              </ModalFooter>
             </>
           )}
         </ModalContent>

@@ -1,5 +1,12 @@
 "use client";
 
+import React, { useMemo } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import { clsx } from "clsx";
+import { toast } from "sonner";
+import { formatEther } from "viem";
+import { useAccount } from "wagmi";
 import { ArrowPathIcon, ChevronLeftIcon } from "@heroicons/react/20/solid";
 import {
   Button,
@@ -10,15 +17,9 @@ import {
   Snippet,
   useDisclosure,
 } from "@nextui-org/react";
-import { clsx } from "clsx";
-import Link from "next/link";
-import { useParams } from "next/navigation";
-import React, { useMemo } from "react"; // Added React import
-import { toast } from "sonner";
-import { formatEther } from "viem";
-import { useAccount } from "wagmi";
+import { LuBitcoin } from "react-icons/lu";
 
-import { PlaceBidModal } from "@/components/place-bid-modal";
+import { BidModal } from "@/components/BidModal";
 import {
   useAuctionTokenBalanceOf,
   useAuctionTokenName,
@@ -37,131 +38,138 @@ import {
   useDutchAuctionGetTokensDistributed,
   useDutchAuctionGetTotalSupply,
 } from "@/generated";
-import { useCountdown } from "@/hooks/use-countdown";
-import { formatCountdown } from "@/lib/utils/countdown";
+import { useCountdownTimer } from "@/hooks/useCountdownTimer";
+import { formatTimeLeft } from "@/lib/utils/countdown";
 
 export default function AuctionPage() {
-  // Get contract address
-  const { contractAddress } = useParams();
+  // Get auction contract address from URL parameters
+  const { contractAddress: auctionAddress } = useParams();
 
-  // Get current wallet
-  const { address } = useAccount();
+  // Get current user account
+  const { address: userAddress } = useAccount();
 
-  // Get token metadata
-  const { data: tokenAddress } = useDutchAuctionGetToken({
-    address: contractAddress as `0x${string}`,
+  // Fetch token metadata
+  const { data: auctionTokenAddress } = useDutchAuctionGetToken({
+    address: auctionAddress as `0x${string}`,
   });
-  const { data: tokenName } = useAuctionTokenName({
-    address: tokenAddress,
+  const { data: auctionTokenName } = useAuctionTokenName({
+    address: auctionTokenAddress,
   });
-  const { data: tokenSymbol } = useAuctionTokenSymbol({
-    address: tokenAddress,
-  });
-
-  // Static data
-  const { data: totalSupply } = useDutchAuctionGetTotalSupply({
-    address: contractAddress as `0x${string}`,
-  });
-  const { data: startPrice } = useDutchAuctionGetStartPrice({
-    address: contractAddress as `0x${string}`,
-  });
-  const { data: reservedPrice } = useDutchAuctionGetReservedPrice({
-    address: contractAddress as `0x${string}`,
-  });
-  const { data: startTime } = useDutchAuctionGetStartTime({
-    address: contractAddress as `0x${string}`,
-  });
-  const startTimeDate = useMemo(() => {
-    return new Date(Number(startTime) * 1000);
-  }, [startTime]);
-  const { data: duration } = useDutchAuctionGetDuration({
-    address: contractAddress as `0x${string}`,
+  const { data: auctionTokenSymbol } = useAuctionTokenSymbol({
+    address: auctionTokenAddress,
   });
 
-  // Dynamic data - Needs refetch
-  const { data: myTokens, refetch: balanceOfRefetch } =
+  // Fetch static auction data
+  const { data: auctionTotalSupply } = useDutchAuctionGetTotalSupply({
+    address: auctionAddress as `0x${string}`,
+  });
+  const { data: auctionStartPrice } = useDutchAuctionGetStartPrice({
+    address: auctionAddress as `0x${string}`,
+  });
+  const { data: auctionReservePrice } = useDutchAuctionGetReservedPrice({
+    address: auctionAddress as `0x${string}`,
+  });
+  const { data: auctionStartTime } = useDutchAuctionGetStartTime({
+    address: auctionAddress as `0x${string}`,
+  });
+  const auctionStartDate = useMemo(() => {
+    return new Date(Number(auctionStartTime) * 1000);
+  }, [auctionStartTime]);
+  const { data: auctionDuration } = useDutchAuctionGetDuration({
+    address: auctionAddress as `0x${string}`,
+  });
+
+  // Fetch dynamic data - Needs refetch
+  const { data: userTokenBalance, refetch: refetchUserBalance } =
     useAuctionTokenBalanceOf({
-      args: [address!],
-      address: tokenAddress,
-      enabled: Boolean(address),
+      args: [userAddress!],
+      address: auctionTokenAddress,
+      enabled: Boolean(userAddress),
     });
-  const { data: tokensDistributed, refetch: tokensDistributedRefetch } =
+  const { data: tokensDistributed, refetch: refetchTokensDistributed } =
     useDutchAuctionGetTokensDistributed({
-      address: contractAddress as `0x${string}`,
+      address: auctionAddress as `0x${string}`,
     });
-  const { data: commitmentByBidder, refetch: commitmentByBidderRefetch } =
+  const { data: userCommitment, refetch: refetchUserCommitment } =
     useDutchAuctionGetCommitmentByBidder({
-      args: [address!],
-      address: contractAddress as `0x${string}`,
-      enabled: Boolean(address),
+      args: [userAddress!],
+      address: auctionAddress as `0x${string}`,
+      enabled: Boolean(userAddress),
     });
-  const { data: currentPrice, refetch: currentPriceRefetch } =
+  const { data: currentAuctionPrice, refetch: refetchCurrentPrice } =
     useDutchAuctionGetCurrentPrice({
-      address: contractAddress as `0x${string}`,
+      address: auctionAddress as `0x${string}`,
     });
-  const { data: auctionEnded, refetch: auctionEndedRefetch } =
+  const { data: auctionHasEnded, refetch: refetchAuctionEnded } =
     useDutchAuctionGetAuctionEnded({
-      address: contractAddress as `0x${string}`,
+      address: auctionAddress as `0x${string}`,
     });
-  const { data: clearingPrice, refetch: clearingPriceRefetch } =
+  const { data: auctionClearingPrice, refetch: refetchClearingPrice } =
     useDutchAuctionGetClearingPrice({
-      address: contractAddress as `0x${string}`,
-      enabled: auctionEnded,
+      address: auctionAddress as `0x${string}`,
+      enabled: auctionHasEnded,
     });
-  const { data: remainingSupply, refetch: RemainingSupplyRefetch } =
+  const { data: remainingAuctionSupply, refetch: refetchRemainingSupply } =
     useDutchAuctionGetRemainingSupply({
-      address: contractAddress as `0x${string}`,
+      address: auctionAddress as `0x${string}`,
     });
 
-  // Distribute tokens function
-  const { write: distributeTokens } = useDutchAuctionDistributeTokens({
-    address: contractAddress as `0x${string}`,
+  // Function to distribute tokens
+  const { write: executeDistributeTokens } = useDutchAuctionDistributeTokens({
+    address: auctionAddress as `0x${string}`,
     onSuccess() {
       toast.success("Tokens distributed successfully");
     },
   });
 
-  // Countdown
-  const { minutes, seconds } = useCountdown(startTimeDate, Number(duration));
+  // Countdown timer
+  const { minutes: countdownMinutes, seconds: countdownSeconds } =
+    useCountdownTimer(auctionStartDate, Number(auctionDuration));
 
-  // Modal control
-  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  // Modal controls
+  const {
+    isOpen: isBidModalOpen,
+    onOpen: openBidModal,
+    onOpenChange: handleBidModalChange,
+  } = useDisclosure();
 
-  // Refetch
-  const refetch = () => {
-    balanceOfRefetch();
-    RemainingSupplyRefetch();
-    tokensDistributedRefetch();
-    commitmentByBidderRefetch();
-    currentPriceRefetch();
-    auctionEndedRefetch();
-    clearingPriceRefetch();
-    RemainingSupplyRefetch();
+  // Refetch data function
+  const refetchData = () => {
+    refetchUserBalance();
+    refetchRemainingSupply();
+    refetchTokensDistributed();
+    refetchUserCommitment();
+    refetchCurrentPrice();
+    refetchAuctionEnded();
+    refetchClearingPrice();
   };
 
-  // loading state
+  // Loading state
   if (
-    !contractAddress ||
-    auctionEnded === undefined ||
+    !auctionAddress ||
+    auctionHasEnded === undefined ||
     tokensDistributed === undefined
   ) {
     return (
       <Card>
-        <CardBody>Auction not found</CardBody>
+        <CardBody>
+          <p className="text-white">Auction not found</p>
+        </CardBody>
       </Card>
     );
   }
 
   return (
     <div className="space-y-10">
+      {/* Header Section */}
       <div className="space-y-5">
         <nav aria-label="Back">
           <Link
             href={`/auctions`}
-            className="text-foreground-500 hover:text-foreground-700 flex items-center text-sm font-medium"
+            className="flex items-center text-sm font-medium text-blue-400 hover:text-blue-300"
           >
             <ChevronLeftIcon
-              className="text-foreground-400 -ml-1 mr-1 h-5 w-5 flex-shrink-0"
+              className="-ml-1 mr-1 h-5 w-5 flex-shrink-0 text-blue-400"
               aria-hidden="true"
             />
             Browse Auctions
@@ -170,61 +178,63 @@ export default function AuctionPage() {
 
         <div className="md:flex md:items-center md:justify-between">
           <div className="min-w-0 flex-1">
-            <h2 className="text-foreground text-2xl font-bold leading-7 sm:truncate sm:text-3xl sm:tracking-tight">
-              {tokenName} ({tokenSymbol})
+            <h2 className="mb-2 text-xl font-semibold text-white">
+              Token Name: {auctionTokenName}
+            </h2>
+            <h2 className="mb-5 text-xl font-semibold text-white">
+              Token Symbol: {auctionTokenSymbol}
             </h2>
           </div>
-          {true && (
-            <div className="mt-4 flex flex-shrink-0 gap-2 md:ml-4 md:mt-0">
+          <div className="mt-4 flex flex-shrink-0 gap-2 md:ml-4 md:mt-0">
+            <Button
+              onClick={refetchData}
+              startContent={<ArrowPathIcon className="h-4 w-4" />}
+              variant="light"
+              className="text-white"
+            >
+              Refresh
+            </Button>
+            {auctionHasEnded ? (
               <Button
-                onClick={() => refetch()}
-                startContent={<ArrowPathIcon className="h-4 w-4" />}
-                variant="light"
+                onClick={executeDistributeTokens}
+                startContent={<LuBitcoin className="h-4 w-4" />}
+                isDisabled={!auctionHasEnded || tokensDistributed}
+                className="text-white"
               >
-                Refresh
+                {tokensDistributed ? "Tokens Distributed" : "Distribute Tokens"}
               </Button>
-              {auctionEnded ? (
-                <Button
-                  onClick={() => distributeTokens()}
-                  isDisabled={!auctionEnded || tokensDistributed}
-                >
-                  {tokensDistributed
-                    ? "Tokens Distributed"
-                    : "Distribute Tokens"}
-                </Button>
-              ) : (
-                currentPrice !== undefined &&
-                remainingSupply !== undefined && (
-                  <PlaceBidModal
-                    contractAddress={contractAddress as `0x${string}`}
-                    currentPrice={currentPrice}
-                    auctionEnded={auctionEnded}
-                    remainingSupply={remainingSupply}
-                    refetch={refetch}
-                    isOpen={isOpen}
-                    onOpen={onOpen}
-                    onOpenChange={onOpenChange}
-                  />
-                )
-              )}
-            </div>
-          )}
+            ) : (
+              currentAuctionPrice !== undefined &&
+              remainingAuctionSupply !== undefined && (
+                <BidModal
+                  contractAddress={auctionAddress as `0x${string}`}
+                  currentPrice={currentAuctionPrice}
+                  auctionEnded={auctionHasEnded}
+                  remainingSupply={remainingAuctionSupply}
+                  refetch={refetchData}
+                  isOpen={isBidModalOpen}
+                  onOpen={openBidModal}
+                  onOpenChange={handleBidModalChange}
+                />
+              )
+            )}
+          </div>
         </div>
 
         <div className="flex gap-2">
-          {auctionEnded ? (
+          {auctionHasEnded ? (
             <Chip color="success" variant="flat">
               Auction Ended
             </Chip>
           ) : (
             <>
               <Chip color="warning" variant="flat">
-                Auction On-going
+                Auction In Progress
               </Chip>
               <Chip variant="flat">
-                {formatCountdown({
-                  minutes,
-                  seconds,
+                {formatTimeLeft({
+                  minutes: countdownMinutes,
+                  seconds: countdownSeconds,
                 })}
               </Chip>
             </>
@@ -232,22 +242,24 @@ export default function AuctionPage() {
         </div>
       </div>
       <Divider />
+
+      {/* Auction Details Section */}
       <AuctionDetailsSection
         items={[
           {
             name: "Start Time",
-            element: startTimeDate.toLocaleString(),
+            element: auctionStartDate.toLocaleString(),
           },
           {
             name: "Duration",
-            element: `${Number(duration) / 60} minutes`,
+            element: `${Number(auctionDuration) / 60} minutes`,
           },
           {
             name: "Auction Address",
             element: (
-              <Snippet hideSymbol color="secondary" variant="flat">
+              <Snippet hideSymbol color="primary" variant="flat">
                 <div className="w-52">
-                  <p className="truncate">{contractAddress}</p>
+                  <p className="truncate text-white">{auctionAddress}</p>
                 </div>
               </Snippet>
             ),
@@ -255,9 +267,9 @@ export default function AuctionPage() {
           {
             name: "Token Address",
             element: (
-              <Snippet hideSymbol color="secondary" variant="flat">
+              <Snippet hideSymbol color="primary" variant="flat">
                 <div className="w-52">
-                  <p className="truncate">{tokenAddress}</p>
+                  <p className="truncate text-white">{auctionTokenAddress}</p>
                 </div>
               </Snippet>
             ),
@@ -267,93 +279,96 @@ export default function AuctionPage() {
               ? "Net Commitment (after refund)"
               : "Total Commitment",
             element:
-              commitmentByBidder !== undefined &&
-              `${(+formatEther(commitmentByBidder)).toFixed(4)} ethers`,
+              userCommitment !== undefined &&
+              `${(+formatEther(userCommitment)).toFixed(4)} ETH`,
           },
           {
             name: tokensDistributed
               ? "Tokens Received"
-              : "Tokens to receive (estimated)",
+              : "Tokens to Receive (Estimated)",
             element: tokensDistributed
-              ? myTokens !== undefined &&
-                `${(+formatEther(myTokens)).toFixed(4)} tokens`
-              : auctionEnded
-              ? commitmentByBidder !== undefined &&
-                clearingPrice !== undefined &&
-                `${Number(commitmentByBidder / clearingPrice).toFixed(
+              ? userTokenBalance !== undefined &&
+                `${(+formatEther(userTokenBalance)).toFixed(4)} tokens`
+              : auctionHasEnded
+              ? userCommitment !== undefined &&
+                auctionClearingPrice !== undefined &&
+                `${Number(userCommitment / auctionClearingPrice).toFixed(
                   4,
                 )} tokens`
-              : commitmentByBidder !== undefined &&
-                currentPrice !== undefined &&
-                `${Number(commitmentByBidder / currentPrice).toFixed(
+              : userCommitment !== undefined &&
+                currentAuctionPrice !== undefined &&
+                `${Number(userCommitment / currentAuctionPrice).toFixed(
                   4,
                 )} tokens`,
           },
         ]}
       />
       <Divider />
+
+      {/* Auction Statistics Section */}
       <div className="space-y-5">
-        {startPrice !== undefined &&
-          currentPrice !== undefined &&
-          reservedPrice !== undefined && (
+        {auctionStartPrice !== undefined &&
+          currentAuctionPrice !== undefined &&
+          auctionReservePrice !== undefined && (
             <StatCardsSection
               title="Auction Price"
               items={[
                 {
                   name: "Start Price",
-                  stat: startPrice,
-                  unit: "ethers/token",
+                  stat: auctionStartPrice,
+                  unit: "ETH/token",
                 },
-                auctionEnded && clearingPrice !== undefined
+                auctionHasEnded && auctionClearingPrice !== undefined
                   ? {
                       name: "Clearing Price",
-                      stat: clearingPrice,
-                      unit: "ethers/token",
+                      stat: auctionClearingPrice,
+                      unit: "ETH/token",
                       highlighted: true,
                     }
                   : {
                       name: "Current Price",
-                      stat: currentPrice,
-                      unit: "ethers/token",
+                      stat: currentAuctionPrice,
+                      unit: "ETH/token",
                       highlighted: true,
                     },
                 {
-                  name: "Reserved Price",
-                  stat: reservedPrice,
-                  unit: "ethers/token",
+                  name: "Reserve Price",
+                  stat: auctionReservePrice,
+                  unit: "ETH/token",
                 },
               ]}
             />
           )}
-        {totalSupply !== undefined && remainingSupply !== undefined && (
-          <StatCardsSection
-            title="Auction Supply"
-            items={[
-              {
-                name: "Total Supply",
-                stat: totalSupply,
-                unit: "tokens",
-              },
-              {
-                name: tokensDistributed
-                  ? "Supply Burned"
-                  : auctionEnded
-                  ? "Supply to be burned"
-                  : "Remaining Supply",
-                stat: remainingSupply,
-                unit: "tokens",
-                highlighted: true,
-              },
-              {
-                name: tokensDistributed
-                  ? "Supply Distributed"
-                  : "Supply to be distributed",
-                stat: totalSupply - remainingSupply,
-                unit: "tokens",
-              },
-            ]}
-          />
-        )}
+        {auctionTotalSupply !== undefined &&
+          remainingAuctionSupply !== undefined && (
+            <StatCardsSection
+              title="Auction Supply"
+              items={[
+                {
+                  name: "Total Supply",
+                  stat: auctionTotalSupply,
+                  unit: "tokens",
+                },
+                {
+                  name: tokensDistributed
+                    ? "Supply Burned"
+                    : auctionHasEnded
+                    ? "Supply to be Burned"
+                    : "Remaining Supply",
+                  stat: remainingAuctionSupply,
+                  unit: "tokens",
+                  highlighted: true,
+                },
+                {
+                  name: tokensDistributed
+                    ? "Supply Distributed"
+                    : "Supply to be Distributed",
+                  stat: auctionTotalSupply - remainingAuctionSupply,
+                  unit: "tokens",
+                },
+              ]}
+            />
+          )}
       </div>
     </div>
   );
@@ -371,8 +386,8 @@ function AuctionDetailsSection({
     <dl className="grid grid-cols-1 gap-5 sm:grid-cols-2">
       {items.map((item) => (
         <div key={item.name} className="px-4 sm:col-span-1 sm:px-0">
-          <dt className="text-foreground-600 leading-6">{item.name}</dt>
-          <dd className="mt-2 text-lg font-medium leading-6 sm:mt-2">
+          <dt className="leading-6 text-gray-300">{item.name}</dt>
+          <dd className="mt-2 text-lg font-medium leading-6 text-white">
             {item.element}
           </dd>
         </div>
@@ -395,7 +410,7 @@ function StatCardsSection({
 }) {
   return (
     <div className="space-y-2">
-      <p>{title}</p>
+      <p className="text-lg font-medium text-gray-200">{title}</p>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
         {items.map((item) => (
           <StatCard key={item.name} {...item} />
@@ -418,15 +433,18 @@ function StatCard({
 }) {
   return (
     <Card>
-      <CardBody className={clsx(highlighted ? "bg-secondary-400" : "")}>
-        <p className="text-foreground-600 text-sm font-medium leading-6">
-          {name}
-        </p>
+      <CardBody
+        className={clsx(
+          highlighted ? "bg-blue-800" : "bg-gray-800",
+          "text-white",
+        )}
+      >
+        <p className="text-sm font-medium leading-6 text-gray-300">{name}</p>
         <p className="mt-2 flex items-baseline gap-x-2">
           <span className="text-xl font-semibold tracking-tight">
             {(+formatEther(stat)).toFixed(4)}
           </span>
-          <span className="text-foreground-600 text-sm">{unit}</span>
+          <span className="text-sm text-gray-300">{unit}</span>
         </p>
       </CardBody>
     </Card>

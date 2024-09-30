@@ -13,6 +13,7 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { parseEther } from "viem";
+import { MdStart } from "react-icons/md";
 
 import { useAuctionFactoryCreateAuction } from "@/generated";
 
@@ -50,8 +51,12 @@ export function CreateAuction({
 
   return (
     <>
-      <Button color="primary" onClick={onOpen}>
-        Create Auction
+      <Button
+        color="primary"
+        onClick={onOpen}
+        startContent={<MdStart className="h-4 w-4" />}
+      >
+        Start Auction
       </Button>
       <Modal
         isOpen={isOpen}

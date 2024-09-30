@@ -29,8 +29,8 @@ import {
   useDutchAuctionGetToken,
   useDutchAuctionGetTokensDistributed,
 } from "@/generated";
-import { useCountdown } from "@/hooks/use-countdown";
-import { formatCountdown } from "@/lib/utils/countdown";
+import { useCountdownTimer } from "@/hooks/useCountdownTimer";
+import { formatTimeLeft } from "@/lib/utils/countdown";
 
 const TokenAndSymbol = ({
   contractAddress,
@@ -173,7 +173,10 @@ function AuctionCard({ contractAddress }: { contractAddress: `0x${string}` }) {
   });
 
   // Countdown timer
-  const { minutes, seconds } = useCountdown(startDate, Number(auctionDuration));
+  const { minutes, seconds } = useCountdownTimer(
+    startDate,
+    Number(auctionDuration),
+  );
 
   return (
     <Card as="li">
@@ -210,7 +213,7 @@ function AuctionCard({ contractAddress }: { contractAddress: `0x${string}` }) {
         {(minutes !== 0 || seconds !== 0) && (
           <div className="ml-2 mt-2">
             <div className="text-md pxtext-medium my-6 inline-block rounded-xl">
-              {formatCountdown({
+              {formatTimeLeft({
                 minutes,
                 seconds,
               })}
