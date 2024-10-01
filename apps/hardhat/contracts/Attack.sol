@@ -18,9 +18,22 @@ contract Attack {
         auctionInstance.distributeTokens();
     }
 
+    // Receive function to handle receiving Ether directly
+    receive() external payable {
+        require(msg.value > 0, "Must send Ether");
+    }
+
     // Attack function to place bids on the auction
     function executeAttack() external payable {
         require(msg.value > 0, "Must send Ether");
         auctionInstance.placeBid{value: msg.value}();
+    }
+
+    function _foobar() private pure {
+        // to add
+    }
+
+    function _returnConstant() private pure returns (uint256) {
+        return 42;
     }
 }
