@@ -283,7 +283,7 @@ export const dutchAuctionABI = [
         name: 'recipient',
         internalType: 'address',
         type: 'address',
-        indexed: false,
+        indexed: true,
       },
       {
         name: 'amount',
@@ -302,7 +302,7 @@ export const dutchAuctionABI = [
         name: 'recipient',
         internalType: 'address',
         type: 'address',
-        indexed: false,
+        indexed: true,
       },
       {
         name: 'amount',
@@ -311,7 +311,7 @@ export const dutchAuctionABI = [
         indexed: false,
       },
     ],
-    name: 'TransferFailed',
+    name: 'TokenTransferFailed',
   },
   {
     stateMutability: 'nonpayable',
@@ -1559,17 +1559,17 @@ export function useDutchAuctionRefundFailedEvent(
 }
 
 /**
- * Wraps __{@link useContractEvent}__ with `abi` set to __{@link dutchAuctionABI}__ and `eventName` set to `"TransferFailed"`.
+ * Wraps __{@link useContractEvent}__ with `abi` set to __{@link dutchAuctionABI}__ and `eventName` set to `"TokenTransferFailed"`.
  */
-export function useDutchAuctionTransferFailedEvent(
+export function useDutchAuctionTokenTransferFailedEvent(
   config: Omit<
-    UseContractEventConfig<typeof dutchAuctionABI, 'TransferFailed'>,
+    UseContractEventConfig<typeof dutchAuctionABI, 'TokenTransferFailed'>,
     'abi' | 'eventName'
   > = {} as any,
 ) {
   return useContractEvent({
     abi: dutchAuctionABI,
-    eventName: 'TransferFailed',
+    eventName: 'TokenTransferFailed',
     ...config,
-  } as UseContractEventConfig<typeof dutchAuctionABI, 'TransferFailed'>)
+  } as UseContractEventConfig<typeof dutchAuctionABI, 'TokenTransferFailed'>)
 }
