@@ -13,21 +13,19 @@ error ERC20InsufficientAllowance(
 error ERC20InvalidApprover(address approver);
 error ERC20InvalidSpender(address spender);
 
-// AuctionToken ERC20 contract (to be created by DutchAuction contract)
 contract AuctionToken {
-    mapping(address => uint256) private _balances;
-    mapping(address => mapping(address => uint256)) private _allowances;
-    uint256 private _totalSupply;
-    string private _name;
-    string private _symbol;
+    mapping(address => uint256) private _token_balances;
+    mapping(address => mapping(address => uint256)) private _token_allowances;
+    uint256 private _token_totalSupply;
+    string private _token_name;
+    string private _token_symbol;
 
     constructor(string memory name_, string memory symbol_, uint256 preMint_) {
-        _name = name_;
-        _symbol = symbol_;
+        _token_name = name_;
+        _token_symbol = symbol_;
         _mint(msg.sender, preMint_);
     }
 
-    // ERC20 implementation of Transfer, Approval events
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(
         address indexed owner,
@@ -35,26 +33,24 @@ contract AuctionToken {
         uint256 value
     );
 
-    // Metadatas
     function name() public view returns (string memory) {
-        return _name;
+        return _token_name;
     }
 
     function symbol() public view returns (string memory) {
-        return _symbol;
+        return _token_symbol;
     }
 
     function decimals() public pure returns (uint8) {
         return 18;
     }
 
-    // ERC20 implementation of totalSupply, balanceOf, transfer, allowance, approve, transferFrom functions
     function totalSupply() public view returns (uint256) {
-        return _totalSupply;
+        return _token_totalSupply;
     }
 
     function balanceOf(address account) public view returns (uint256) {
-        return _balances[account];
+        return _token_balances[account];
     }
 
     function transfer(address to, uint256 value) public returns (bool) {
@@ -67,7 +63,7 @@ contract AuctionToken {
         address owner,
         address spender
     ) public view returns (uint256) {
-        return _allowances[owner][spender];
+        return _token_allowances[owner][spender];
     }
 
     function approve(address spender, uint256 value) public returns (bool) {
@@ -87,7 +83,6 @@ contract AuctionToken {
         return true;
     }
 
-    // Burnable
     function burn(uint256 value) public {
         _burn(msg.sender, value);
     }
@@ -105,24 +100,24 @@ contract AuctionToken {
 
     function _update(address from, address to, uint256 value) internal {
         if (from == address(0)) {
-            _totalSupply += value;
+            _token_totalSupply += value;
         } else {
-            uint256 fromBalance = _balances[from];
+            uint256 fromBalance = _token_balances[from];
             if (fromBalance < value) {
                 revert ERC20InsufficientBalance(from, fromBalance, value);
             }
             unchecked {
-                _balances[from] = fromBalance - value;
+                _token_balances[from] = fromBalance - value;
             }
         }
 
         if (to == address(0)) {
             unchecked {
-                _totalSupply -= value;
+                _token_totalSupply -= value;
             }
         } else {
             unchecked {
-                _balances[to] += value;
+                _token_balances[to] += value;
             }
         }
 
@@ -159,7 +154,7 @@ contract AuctionToken {
         if (spender == address(0)) {
             revert ERC20InvalidSpender(address(0));
         }
-        _allowances[owner][spender] = value;
+        _token_allowances[owner][spender] = value;
         if (emitEvent) {
             emit Approval(owner, spender, value);
         }
@@ -183,5 +178,11 @@ contract AuctionToken {
                 _approve(owner, spender, currentAllowance - value, false);
             }
         }
+    }
+
+    // New redundant function
+    function _unusedInternalFunction() internal pure returns (string memory) {
+        return
+            "This function is redundant and only exists for differentiation.";
     }
 }
