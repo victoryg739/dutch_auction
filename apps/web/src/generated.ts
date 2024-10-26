@@ -36,7 +36,7 @@ export const auctionFactoryABI = [
         indexed: false,
       },
     ],
-    name: 'AuctionCreated',
+    name: 'AuctionInitialized',
   },
   {
     stateMutability: 'nonpayable',
@@ -57,7 +57,7 @@ export const auctionFactoryABI = [
     stateMutability: 'view',
     type: 'function',
     inputs: [],
-    name: 'getAllAuctions',
+    name: 'fetchAllAuctions',
     outputs: [
       { name: '', internalType: 'contract DutchAuction[]', type: 'address[]' },
     ],
@@ -65,8 +65,8 @@ export const auctionFactoryABI = [
   {
     stateMutability: 'view',
     type: 'function',
-    inputs: [{ name: 'creator', internalType: 'address', type: 'address' }],
-    name: 'getAuctionsByCreator',
+    inputs: [{ name: 'user', internalType: 'address', type: 'address' }],
+    name: 'fetchAuctionsByUser',
     outputs: [
       { name: '', internalType: 'contract DutchAuction[]', type: 'address[]' },
     ],
@@ -457,10 +457,10 @@ export function useAuctionFactoryRead<
 }
 
 /**
- * Wraps __{@link useContractRead}__ with `abi` set to __{@link auctionFactoryABI}__ and `functionName` set to `"getAllAuctions"`.
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link auctionFactoryABI}__ and `functionName` set to `"fetchAllAuctions"`.
  */
-export function useAuctionFactoryGetAllAuctions<
-  TFunctionName extends 'getAllAuctions',
+export function useAuctionFactoryFetchAllAuctions<
+  TFunctionName extends 'fetchAllAuctions',
   TSelectData = ReadContractResult<typeof auctionFactoryABI, TFunctionName>,
 >(
   config: Omit<
@@ -471,7 +471,7 @@ export function useAuctionFactoryGetAllAuctions<
   return useContractRead({
     abi: auctionFactoryABI,
     address: auctionFactoryAddress,
-    functionName: 'getAllAuctions',
+    functionName: 'fetchAllAuctions',
     ...config,
   } as UseContractReadConfig<
     typeof auctionFactoryABI,
@@ -481,10 +481,10 @@ export function useAuctionFactoryGetAllAuctions<
 }
 
 /**
- * Wraps __{@link useContractRead}__ with `abi` set to __{@link auctionFactoryABI}__ and `functionName` set to `"getAuctionsByCreator"`.
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link auctionFactoryABI}__ and `functionName` set to `"fetchAuctionsByUser"`.
  */
-export function useAuctionFactoryGetAuctionsByCreator<
-  TFunctionName extends 'getAuctionsByCreator',
+export function useAuctionFactoryFetchAuctionsByUser<
+  TFunctionName extends 'fetchAuctionsByUser',
   TSelectData = ReadContractResult<typeof auctionFactoryABI, TFunctionName>,
 >(
   config: Omit<
@@ -495,7 +495,7 @@ export function useAuctionFactoryGetAuctionsByCreator<
   return useContractRead({
     abi: auctionFactoryABI,
     address: auctionFactoryAddress,
-    functionName: 'getAuctionsByCreator',
+    functionName: 'fetchAuctionsByUser',
     ...config,
   } as UseContractReadConfig<
     typeof auctionFactoryABI,
@@ -613,20 +613,20 @@ export function useAuctionFactoryEvent<TEventName extends string>(
 }
 
 /**
- * Wraps __{@link useContractEvent}__ with `abi` set to __{@link auctionFactoryABI}__ and `eventName` set to `"AuctionCreated"`.
+ * Wraps __{@link useContractEvent}__ with `abi` set to __{@link auctionFactoryABI}__ and `eventName` set to `"AuctionInitialized"`.
  */
-export function useAuctionFactoryAuctionCreatedEvent(
+export function useAuctionFactoryAuctionInitializedEvent(
   config: Omit<
-    UseContractEventConfig<typeof auctionFactoryABI, 'AuctionCreated'>,
+    UseContractEventConfig<typeof auctionFactoryABI, 'AuctionInitialized'>,
     'abi' | 'address' | 'eventName'
   > = {} as any,
 ) {
   return useContractEvent({
     abi: auctionFactoryABI,
     address: auctionFactoryAddress,
-    eventName: 'AuctionCreated',
+    eventName: 'AuctionInitialized',
     ...config,
-  } as UseContractEventConfig<typeof auctionFactoryABI, 'AuctionCreated'>)
+  } as UseContractEventConfig<typeof auctionFactoryABI, 'AuctionInitialized'>)
 }
 
 /**

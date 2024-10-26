@@ -1,7 +1,5 @@
 "use client";
 
-import { IoIosRefresh } from "react-icons/io";
-
 import {
   Button,
   Card,
@@ -15,12 +13,13 @@ import {
 } from "@nextui-org/react";
 import Link from "next/link";
 import React, { useMemo, useState } from "react";
+import { IoIosRefresh } from "react-icons/io";
 import { useAccount } from "wagmi";
 
 import { CreateAuction } from "@/components/CreateAuction";
 import {
-  useAuctionFactoryGetAllAuctions,
-  useAuctionFactoryGetAuctionsByCreator,
+  useAuctionFactoryFetchAllAuctions,
+  useAuctionFactoryFetchAuctionsByUser,
   useAuctionTokenName,
   useAuctionTokenSymbol,
   useDutchAuctionGetAuctionEnded,
@@ -79,11 +78,11 @@ export default function AuctionsPage() {
 
   // Fetch all auctions
   const { data: allAuctions, refetch: refetchAll } =
-    useAuctionFactoryGetAllAuctions();
+    useAuctionFactoryFetchAllAuctions();
 
   // Fetch auctions created by the current user
   const { data: userAuctions, refetch: refetchUser } =
-    useAuctionFactoryGetAuctionsByCreator({
+    useAuctionFactoryFetchAuctionsByUser({
       args: [userAddress as `0x${string}`],
     });
 
